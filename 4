@@ -8,4 +8,17 @@ kubectl scale deployment/hw-deployment --replicas=3
 kubectl get deployment
 kubectl get pods
 kubectl port-forward svc/hello-world 5000:5000
- Goto browser and type http://localhost:5000
+Goto browser and type http://localhost:5000
+
+
+docker built -t python-app .
+docker built -t chethanaravi/python-app:latest
+ kubectl apply -f configmap.yaml
+ kubectl apply -f secret.yaml
+kubectl apply -f deployment.yaml
+ kubectl apply -f service.yaml
+
+Check the Pod and Service Status
+kubectl get pods
+kubectl get svc
+kubectl port-forward svc/python-service 8095:80
