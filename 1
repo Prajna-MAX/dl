@@ -1,54 +1,41 @@
-com.app package->app.java class
-package myproject;
-import java.util.ResourceBundle;
-public class App {
-	public int login(String in_user,String in_password) {
-		 ResourceBundle rb=ResourceBundle.getBundle("config");
-		 String user=rb.getString("username");
-		 String password=rb.getString("password");
-		 
-		 if(in_user.equals(user) && in_password.equals(password))
-			 return 1;
-		 else 
-			 return 0;
-		 
-	 }
-}
-config.properties
-username=abc
-password=abc
-com.test package->Apptest.java class
-package myproject;
+sudo service apache2 start
+sudo mkdir -p /var/www/html/testlogin
+cd /var/www/html/testlogin
 
-import org.testng.Assert;
+sudo nano login.html
+html
+CopyEdit
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Login Page</title>
+</head>
+<body>
+<h2>Login Form</h2>
+<form action="login.php" method="post">
+  Username: <input type="text" name="username"><br><br>
+  Password: <input type="password" name="password"><br><br>
+  <input type="submit" value="Login">
+</form>
+</body>
+</html>
 
-public class AppTest {
-	@Test
-	public void testlogin1() {
-		App myapp=new App();
-		Assert.assertEquals(0,myapp.login("abc","avb"));
-	}
-	@Test
-	public void testlogin2() {
-		App myapp=new App();
-		Assert.assertEquals(1,myapp.login("abc","abc"));
-	}
-}
-pom
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>tools</groupId>
-  <artifactId>myproject</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  
-  <dependencies>
-  <!-- https://mvnrepository.com/artifact/org.testng/testng -->
-<dependency>
-    <groupId>org.testng</groupId>
-    <artifactId>testng</artifactId>
-    <version>7.10.2</version>
-    <scope>test</scope>
-</dependency>
-  </dependencies>
-</project>
-install testng in mvn repo and in eclipse,help->eclipse marketplace->testng install
+nano login.php
+<?php
+$username = $_POST['username'];
+$password = $_POST['password'];
+
+echo "<h2>Login Attempt</h2>";
+echo "Username: " . $username . "<br>";
+echo "Password: " . $password . "<br>";
+?>
+
+sudo service apache2 status
+sudo service apache2 start
+
+http://127.0.0.1/testlogin/login.html
+
+in wireshark->lo->http.request.method=="POST"
+
+submit form
+right click->follow->tcp stream
