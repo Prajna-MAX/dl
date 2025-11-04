@@ -1,24 +1,37 @@
-minikube start
-docker build -t chethanaravi/app1-k8s:latest .
-docker push chethanaravi/app1-k8s:latest
-kubectl apply -f pod.yaml
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-kubectl scale deployment/hw-deployment --replicas=3
-kubectl get deployment
-kubectl get pods
-kubectl port-forward svc/hello-world 5000:5000
-Goto browser and type http://localhost:5000
+#include <stdio.h>
+#include <string.h>
 
+int main(void)
+{
+    char buff[64];         /* larger buffer */
+    int pass = 0;
 
-docker built -t python-app .
-docker built -t chethanaravi/python-app:latest
- kubectl apply -f configmap.yaml
- kubectl apply -f secret.yaml
-kubectl apply -f deployment.yaml
- kubectl apply -f service.yaml
+    printf("\nEnter the password: ");
+    if (fgets(buff, sizeof(buff), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        return 1;
+    }
 
-Check the Pod and Service Status
-kubectl get pods
-kubectl get svc
-kubectl port-forward svc/python-service 8095:80
+    /* Remove trailing newline inserted by fgets (if any) */
+    buff[strcspn(buff, "\n")] = '\0';
+
+    /* strcmp returns 0 when strings are equal */
+    if (strcmp(buff, "thegeekstuff") == 0) {
+        pass = 1;
+    } else {
+        pass = 0;
+    }
+
+    if (pass) {
+        printf("\nCorrect Password\n");
+        /* Do not programmatically give root/admin rights here.
+           Perform allowed actions for an authenticated user instead. */
+    } else {
+        printf("\nWrong Password\n");
+    }
+
+    return 0;
+}
+
+gcc -g -O0 -fno-stack-protector -no-pie overflow.c -o overflow
+./overflow
