@@ -1,59 +1,66 @@
-# Imports required packages
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.datasets import mnist
+mkdir -p ~/acq_demo && cd ~/acq_demo
+sudo apt update
+sudo apt install -y steghide zip clamav
 
-# Load MNIST dataset
-(X_train_full, y_train_full), (X_test, y_test) = mnist.load_data()
+mkdir -p ~/acq_demo/victim_docs
+echo "this is a test secret."> ~/acq_demo/victim_docs/secret.txt
+echo "X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-
+FILE!$H+H*"> ~/acq_demo/eicar.com.txt
 
-# Check dataset shapes
-print("Full training set shape:", X_train_full.shape)
-print("Test set shape:", X_test.shape)
 
-# Normalize data to [0, 1]
-X_train_full = X_train_full / 255.0
-X_test = X_test / 255.0
+nano stimulate_malware.sh
+#!/bin/bash
+# simulate_malware (robust, debug-friendly) — local-only demo
+set -euo pipefail
 
-# Split off validation set (last 5000 examples)
-X_train, X_val = X_train_full[:-5000], X_train_full[-5000:]
-y_train, y_val = y_train_full[:-5000], y_train_full[-5000:]
+echo "[*] script start: $(date)"
+TMPDIR="$(mktemp -d /tmp/exfil.XXXXXX)" || { echo "[!] mktemp failed" >&2; exit 1; }
+echo "[*] TMPDIR=${TMPDIR}"
+if [ -z "${TMPDIR}" ] || [ ! -d "${TMPDIR}" ]; then
+  echo "[!] Failed to create temp dir. TMPDIR='${TMPDIR}'" >&2
+  exit 1
+fi
 
-# Add channel dimension (needed for Conv2D input: [batch, height, width, channels])
-X_train = X_train[..., np.newaxis]
-X_val = X_val[..., np.newaxis]
-X_test = X_test[..., np.newaxis]
+trap 'echo "[*] cleaning ${TMPDIR}"; rm -rf "${TMPDIR}"' EXIT
 
-# Confirm shape
-print("Training set shape after adding channel:", X_train.shape)
+SRC="${HOME}/acq_demo/victim_docs/secret.txt"
+if [ ! -f "${SRC}" ]; then
+  echo "[!] Source file missing: ${SRC}" >&2
+  exit 1
+fi
 
-# Set seed for reproducibility
-tf.random.set_seed(42)
+echo "[*] Found source: ${SRC}"
+cp "${SRC}" "${TMPDIR}/secret.txt"
+echo "[*] copied secret to ${TMPDIR}/secret.txt"
 
-# Build CNN model
-model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(32, kernel_size=3, padding="same", activation="relu", kernel_initializer="he_normal", input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(64, kernel_size=3, padding="same", activation="relu", kernel_initializer="he_normal"),
-    tf.keras.layers.MaxPool2D(),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dropout(0.25),
-    tf.keras.layers.Dense(128, activation="relu", kernel_initializer="he_normal"),
-    tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(10, activation="softmax")
-])
+# create encrypted zip (password = pass123)
+zip -j -P pass123 "${TMPDIR}/payload.zip" "${TMPDIR}/secret.txt"
+echo "[*] created zip: ${TMPDIR}/payload.zip"
 
-# Compile model
-model.compile(
-    loss="sparse_categorical_crossentropy",
-    optimizer="nadam",
-    metrics=["accuracy"]
-)
+# copy payload out to stable demo location
+mkdir -p /tmp/exfil
+cp "${TMPDIR}/payload.zip" /tmp/exfil/payload.zip
+echo "[*] copied payload to /tmp/exfil/payload.zip"
 
-# Train model
-model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
+ls -l /tmp/exfil || echo "[!] cannot list /tmp/exfil"
+echo "[*] script end: $(date)"
 
-# Save model (make sure './models' directory exists)
-model.save("./models/my_mnist_cnn_model.keras")
+chmod +x ~/acq_demo/simulate_malware.sh
+bash -x ~/acq_demo/simulate_malware.sh
 
-# Evaluate on test data
-test_loss, test_accuracy = model.evaluate(X_test, y_test)
-print("Test Accuracy:", test_accuracy)
+
+Place a JPEG at ~/acq_demo/cover1.jpg before running these commands (or copy a
+system image into place):
+# verify files
+ls -l /tmp/exfil/payload.zip
+ls -l ~/acq_demo/cover1.jpg
+
+steghide embed -cf ~/acq_demo/cover1.jpg -ef /tmp/exfil/payload.zip -p demo-pass
+steghide info ~/acq_demo/cover1.jpg
+
+mkdir -p ~/.hidden_store
+mv ~/acq_demo/cover1.jpg ~/.hidden_store/.cover1.jpg
+ls -la ~/.hidden_store
+
+unzip -P pass123 /tmp/recovered_payload.zip -d /tmp/recovered_payload
+cat /tmp/recovered_payload/secret.txt
